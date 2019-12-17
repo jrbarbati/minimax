@@ -1,53 +1,56 @@
 INFINITY = 100000000000
-NEG_INFINITY = -100000000000
 
 
 class MustBeImplementedError(Exception):
-	pass
+	def __init__(self, message):
+		super(Exception, self).__init__(message)
 
 
 class GameState:
 
-	def get_children(self):
-		raise MustBeImplementedError()
+	def get_legal_actions(self):
+		raise MustBeImplementedError('Each GameState much implement get_legal_actions()')
 
-	def calc_heuristic(self):
-		raise MustBeImplementedError()
+	def generate_successor(self, action):
+		raise MustBeImplementedError('Each GameState much implement generate_successor()')
+
+	def utility(self):
+		raise MustBeImplementedError('Each GameState much implement utility()')
 
 	def is_terminal(self):
-		raise MustBeImplementedError()
+		raise MustBeImplementedError('Each GameState much implement is_terminal()')
 
 
-def _maximize(game_state, depth):
-	value = NEG_INFINITY
-	max_child = None
+def _maximize(game_state, alpha, beta, depth):
+	value = -INFINITY
 
-	for child in game_state.get_children():
-		child_value, _ = minimax(child, depth=depth - 1, maximize=False)
+	for action in game_state.get_legal_actions():
+		value = max(value, minimax(game_state.generate_successor(action), alpha, beta, depth=depth - 1, maximize=False))
 
-		if (child_value > value):
-			value = child_value
-			max_child = child
+		if value > beta:
+			return value
 
-	return value, max_child
+		alpha = max(alpha, value)
+
+	return value
 
 
-def _minimize(game_state, depth):
+def _minimize(game_state, alpha, beta, depth):
 	value = INFINITY
-	min_child = None
 
-	for child in game_state.get_children():
-		child_value, _ = minimax(child, depth=depth - 1, maximize=True)
+	for action in game_state.get_legal_actions():
+		value = min(value, minimax(game_state.generate_successor(action), alpha, beta, depth=depth - 1, maximize=True))
 
-		if (child_value < value):
-			value = child_value
-			min_child = child
+		if value < alpha:
+			return value
 
-	return value, min_child
+		beta = min(beta, value)
+
+	return value
 
 
-def minimax(game_state, depth=1000000000, maximize=True):
+def minimax(game_state, alpha, beta, depth=1000000000, maximize=True):
 	if depth == 0 or game_state.is_terminal():
-		return game_state.calc_heuristic(), game_state
+		return game_state.utility()
 
-	return _maximize(game_state, depth) if maximize else _minimize(game_state, depth)
+	return _maximize(game_state, alpha, beta, depth) if maximize else _minimize(game_state, alpha, beta, depth)
